@@ -24,6 +24,7 @@ export interface HourPrice {
 
 const URL = (date: string, area: string) => `https://www.hvakosterstrommen.no/api/v1/prices/${date.slice(0, 4)}/${date.slice(5, 7)}-${date.slice(8, 10)}_${area}.json`;
 const cacheFile = (date: string, area: string) => path.join(paths.prices, `${date}_${area}.json`);
+export const isCached = (date: string, config: Config) => fs.existsSync(cacheFile(date, config.area.code));
 
 /** Prices for a day: from the local cache, or fetched once and cached. Null when not published yet. */
 export async function fetchDay(date: string, config: Config, fetchFn: typeof fetch = fetch): Promise<RawPrice[] | null> {
@@ -66,6 +67,8 @@ export interface DayStats {
   max: HourPrice;
   /** Cheapest run of consecutive hours, for washing/charging. */
   cheapest: { from: string; to: string; avg: number; indexes: number[] };
+  /** Most expensive run of the same length (to show what you save). */
+  dearest: { from: string; to: string; avg: number; indexes: number[] };
   negativeHours: number;
 }
 
@@ -79,17 +82,21 @@ export function dayStats(hours: HourPrice[], windowHours: number): DayStats {
   const avg = hours.reduce((n, h) => n + h.ore, 0) / hours.length;
   const min = hours.reduce((a, b) => (b.ore < a.ore ? b : a));
   const max = hours.reduce((a, b) => (b.ore > a.ore ? b : a));
-  let best = { i: 0, avg: Infinity };
-  for (let i = 0; i + windowHours <= hours.length; i++) {
-    const w = hours.slice(i, i + windowHours).reduce((n, h) => n + h.ore, 0) / windowHours;
-    if (w < best.avg) best = { i, avg: w };
-  }
-  const indexes = Array.from({ length: windowHours }, (_, k) => best.i + k);
+  const windows = Array.from({ length: hours.length - windowHours + 1 }, (_, i) => ({ i, avg: hours.slice(i, i + windowHours).reduce((n, h) => n + h.ore, 0) / windowHours }));
+  const best = windows.reduce((a, b) => (b.avg < a.avg ? b : a));
+  const worst = windows.reduce((a, b) => (b.avg > a.avg ? b : a));
+  const span = (w: { i: number; avg: number }) => ({
+    from: hours[w.i].hour,
+    to: endHour(hours[w.i + windowHours - 1]),
+    avg: w.avg,
+    indexes: Array.from({ length: windowHours }, (_, k) => w.i + k),
+  });
   return {
     avg,
     min,
     max,
-    cheapest: { from: hours[best.i].hour, to: endHour(hours[best.i + windowHours - 1]), avg: best.avg, indexes },
+    cheapest: span(best),
+    dearest: span(worst),
     negativeHours: hours.filter((h) => h.ore < 0).length,
   };
 }

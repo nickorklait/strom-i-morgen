@@ -1,5 +1,7 @@
 import type { Config } from './config.ts';
 import { endHour, ore, type DayStats } from './data/prices.ts';
+import { kr, type Cost } from './costs.ts';
+import type { PriceRecord } from './data/history.ts';
 
 const DAYS = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
 const MONTHS = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
@@ -15,7 +17,25 @@ export function changeText(avg: number, todayAvg: number | null): string | null 
   return `${d < 0 ? 'ned' : 'opp'} ${Math.abs(d)} øre fra i dag`;
 }
 
-export function caption(date: string, s: DayStats, todayAvg: number | null, config: Config): string {
+export interface Extras {
+  record: PriceRecord | null;
+  lastYear: { pct: number; avg: number } | null;
+  costs: Cost[];
+}
+
+const withYear = (day: string, ref: string) => `${dateText(day)}${day.slice(0, 4) !== ref.slice(0, 4) ? ` ${day.slice(0, 4)}` : ''}`;
+
+/** "Billigste dag siden 2. mai" / "Dyreste dag på over ett år". */
+export function recordText(r: PriceRecord | null, date: string): string | null {
+  if (!r) return null;
+  const what = r.kind === 'cheapest' ? 'Billigste' : 'Dyreste';
+  return r.since ? `${what} dag siden ${withYear(r.since, date)}` : `${what} dag på over ett år`;
+}
+
+/** "−34 % mot samme dag i fjor". */
+export const lastYearText = (v: { pct: number } | null) => (v ? `${v.pct > 0 ? '+' : v.pct < 0 ? '−' : '±'}${Math.abs(v.pct)} % mot samme dag i fjor` : null);
+
+export function caption(date: string, s: DayStats, todayAvg: number | null, config: Config, extras: Extras = { record: null, lastYear: null, costs: [] }): string {
   const change = changeText(s.avg, todayAvg);
   const trend = change === null ? '' : change.startsWith('ned') ? ' 📉' : change.startsWith('opp') ? ' 📈' : '';
   const maxEnd = endHour(s.max);
@@ -23,11 +43,13 @@ export function caption(date: string, s: DayStats, todayAvg: number | null, conf
     `Strøm i morgen, ${dayName(date)} ${dateText(date)} (${config.area.name}) ⚡`,
     '',
     `Snitt: ${ore(s.avg)} øre/kWh${change ? ` – ${change}${trend}` : ''}`,
+    [recordText(extras.record, date), lastYearText(extras.lastYear)].filter(Boolean).length ? `📅 ${[recordText(extras.record, date), lastYearText(extras.lastYear)].filter(Boolean).join(' · ')}` : '',
     `💚 Billigst: kl. ${s.cheapest.from}–${s.cheapest.to} (${ore(s.cheapest.avg)} øre i snitt)`,
     `🔶 Dyrest: kl. ${s.max.hour}–${maxEnd} (${ore(s.max.ore)} øre)`,
     s.negativeHours > 0 ? `Obs: negativ pris i ${s.negativeHours} timer!` : '',
     '',
     `Tips: Sett på vaskemaskin, oppvask og lading kl. ${s.cheapest.from}–${s.cheapest.to}.`,
+    extras.costs[0] ? `🚗 ${extras.costs[0].name} (${config.appliances[0].kwh} kWh): ca. ${kr(extras.costs[0].cheap)} kl. ${s.cheapest.from}–${s.cheapest.to}, mot ${kr(extras.costs[0].dear)} kl. ${s.dearest.from}–${s.dearest.to}. Se bilde 2 for mer.` : '',
     '',
     `Spotpris inkl. mva, uten nettleie og påslag. ${config.source.attribution}.`,
     config.brand.hashtags.join(' '),
@@ -40,13 +62,18 @@ export function caption(date: string, s: DayStats, todayAvg: number | null, conf
  * Every number in a caption must come from the data (prices, hours, the date, counts).
  * Guards template changes and, later, captions written by an AI model.
  */
-export function factCheckNumbers(text: string, date: string, s: DayStats, todayAvg: number | null, hoursInDay: number): string[] {
+export function factCheckNumbers(text: string, date: string, s: DayStats, todayAvg: number | null, hoursInDay: number, extras?: Extras, config?: Config): string[] {
   const allowed = new Set<number>([
     ore(s.avg), ore(s.min.ore), ore(s.max.ore), ore(s.cheapest.avg), s.negativeHours, hoursInDay,
     Number(date.slice(8, 10)), Number(date.slice(0, 4)),
     ...Array.from({ length: 25 }, (_, h) => h), // clock hours
   ]);
   if (todayAvg !== null) allowed.add(Math.abs(ore(s.avg) - ore(todayAvg)));
+  if (extras?.lastYear) allowed.add(Math.abs(extras.lastYear.pct));
+  if (extras?.record?.since) [Number(extras.record.since.slice(8, 10)), Number(extras.record.since.slice(0, 4))].forEach((n) => allowed.add(n));
+  for (const c of extras?.costs ?? []) for (const v of [c.cheap, c.dear]) allowed.add(Number(kr(v).replace(' kr', '').replace(',', '.')));
+  for (const a of config?.appliances ?? []) allowed.add(a.kwh);
+  allowed.add(2); // "bilde 2"
   const body = text.replace(/#[\p{L}\p{N}_]+/gu, ' ').replace(/NO\d/g, ' ');
   return [...body.matchAll(/-?\d+(?:[.,]\d+)?/g)]
     .map((m) => m[0])

@@ -9,6 +9,10 @@ import { caption, factCheckNumbers } from '../caption.ts';
 import { loadConfig, paths } from '../config.ts';
 import { dayStats, fetchDay, toHourly } from '../data/prices.ts';
 import { DayAhead } from '../render/dayAhead.tsx';
+import { CostCard } from '../render/costCard.tsx';
+import { costs } from '../costs.ts';
+import { averageFetcher, recordFor, vsLastYear } from '../data/history.ts';
+import { lastYearText, recordText, type Extras } from '../caption.ts';
 import { renderPng, SIZES, type Format } from '../render/render.ts';
 
 const osloDate = (d: Date) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Oslo' }).format(d);
@@ -33,17 +37,32 @@ const stats = dayStats(hours, config.cheapWindowHours);
 const todayRaw = await fetchDay(addDays(date, -1), config);
 const todayAvg = todayRaw ? dayStats(toHourly(todayRaw, config.area.vat), config.cheapWindowHours).avg : null;
 
-const text = caption(date, stats, todayAvg, config);
-const problems = factCheckNumbers(text, date, stats, todayAvg, hours.length);
+// History: past days are fetched once and cached (first run may take a little while).
+const average = averageFetcher(config);
+const extras: Extras = {
+  record: await recordFor(date, stats.avg, average, config),
+  lastYear: await vsLastYear(date, stats.avg, average),
+  costs: costs(stats, config),
+};
+const badges = [
+  ...(extras.record ? [{ text: recordText(extras.record, date)!, tone: extras.record.kind === 'cheapest' ? ('good' as const) : ('warn' as const) }] : []),
+  ...(extras.lastYear ? [{ text: lastYearText(extras.lastYear)!, tone: 'neutral' as const }] : []),
+];
+
+const text = caption(date, stats, todayAvg, config, extras);
+const problems = factCheckNumbers(text, date, stats, todayAvg, hours.length, extras, config);
 if (problems.length) throw new Error(`Caption failed the fact-check: ${problems.join('; ')}`);
 
 const outDir = path.join(paths.output, date);
 fs.mkdirSync(outDir, { recursive: true });
 for (const format of ['feed', 'story'] as Format[]) {
   const file = path.join(outDir, `strom_${date}_${format}.png`);
-  fs.writeFileSync(file, await renderPng(<DayAhead date={date} hours={hours} stats={stats} todayAvg={todayAvg} config={config} format={format} />, SIZES[format]));
+  fs.writeFileSync(file, await renderPng(<DayAhead date={date} hours={hours} stats={stats} todayAvg={todayAvg} config={config} format={format} badges={badges} />, SIZES[format]));
   console.log(`  ✓ ${path.relative(process.cwd(), file)}`);
 }
+const costFile = path.join(outDir, `strom_${date}_kostnad.png`);
+fs.writeFileSync(costFile, await renderPng(<CostCard date={date} s={stats} items={extras.costs} config={config} format="feed" />, SIZES.feed));
+console.log(`  ✓ ${path.relative(process.cwd(), costFile)}`);
 fs.writeFileSync(path.join(outDir, 'caption.txt'), text);
-fs.writeFileSync(path.join(outDir, 'post.json'), JSON.stringify({ date, area: config.area.code, hours, stats, todayAvg, caption: text }, null, 2));
+fs.writeFileSync(path.join(outDir, 'post.json'), JSON.stringify({ date, area: config.area.code, hours, stats, todayAvg, extras, caption: text }, null, 2));
 console.log(`\n${text}`);

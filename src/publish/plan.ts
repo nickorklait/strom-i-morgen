@@ -5,7 +5,8 @@ export interface Unit {
   key: string;
   date: string;
   kind: 'feed' | 'story';
-  image: string;
+  /** One image (story) or several (feed carousel). */
+  images: string[];
   caption: string | null;
   /** Oslo local "YYYY-MM-DDTHH:MM". */
   publishAt: string;
@@ -22,8 +23,8 @@ export const addDays = (day: string, n: number) => {
 export function unitsFor(date: string, caption: string, config: Config): Unit[] {
   const publishAt = `${addDays(date, -1)}T${config.publish.time}`;
   const expiresAt = `${date}T${config.publish.lastUsefulTime}`;
-  const units: Unit[] = [{ key: `${date}-feed`, date, kind: 'feed', image: `strom_${date}_feed.png`, caption, publishAt, expiresAt }];
-  if (config.publish.stories) units.push({ key: `${date}-story`, date, kind: 'story', image: `strom_${date}_story.png`, caption: null, publishAt, expiresAt });
+  const units: Unit[] = [{ key: `${date}-feed`, date, kind: 'feed', images: [`strom_${date}_feed.png`, `strom_${date}_kostnad.png`], caption, publishAt, expiresAt }];
+  if (config.publish.stories) units.push({ key: `${date}-story`, date, kind: 'story', images: [`strom_${date}_story.png`], caption: null, publishAt, expiresAt });
   return units;
 }
 

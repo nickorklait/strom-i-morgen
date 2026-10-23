@@ -18,6 +18,10 @@ export interface Config {
   source: { name: string; url: string; attribution: string; userAgent: string };
   colors: { surface: string; panel: string; line: string; text: string; muted: string; accent: string; bar: string; cheap: string; expensive: string };
   sponsor: { label: string; text: string };
+  /** Everyday uses turned into kroner (approximate consumption, stated on the image). */
+  appliances: { name: string; detail: string; kwh: number }[];
+  /** "Cheapest day since …": how far back to look, and the minimum gap worth mentioning. */
+  history: { lookbackDays: number; minGapDays: number };
   publish: {
     /** Nothing is sent to Instagram unless true. */
     enabled: boolean;

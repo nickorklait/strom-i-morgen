@@ -115,9 +115,11 @@ export interface DayAheadProps {
   todayAvg: number | null;
   config: Config;
   format: Format;
+  /** Short highlights under the date, e.g. a record or the change vs last year. */
+  badges?: { text: string; tone: 'good' | 'warn' | 'neutral' }[];
 }
 
-export function DayAhead({ date, hours, stats: s, todayAvg, config, format }: DayAheadProps) {
+export function DayAhead({ date, hours, stats: s, todayAvg, config, format, badges = [] }: DayAheadProps) {
   const c = config.colors;
   const { width, height } = SIZES[format];
   const story = format === 'story';
@@ -145,6 +147,16 @@ export function DayAhead({ date, hours, stats: s, todayAvg, config, format }: Da
             <span style={{ fontFamily: TEXT, fontWeight: 600, fontSize: 28, letterSpacing: 2, textTransform: 'uppercase' }}>{dateText(date)} {date.slice(0, 4)}</span>
           </div>
         </div>
+
+        {badges.length > 0 && (
+          <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
+            {badges.map((b) => (
+              <div key={b.text} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 30, border: `2px solid ${b.tone === 'good' ? c.cheap : b.tone === 'warn' ? c.expensive : c.line}` }}>
+                <span style={{ fontFamily: TEXT, fontWeight: 600, fontSize: 21, color: c.text }}>{b.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* key numbers */}
         <div style={{ display: 'flex', gap: 12, marginTop: story ? 44 : 28 }}>

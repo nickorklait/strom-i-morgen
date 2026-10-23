@@ -41,5 +41,31 @@
     "stories": true,
     "time": "14:00",
     "lastUsefulTime": "12:00"
+  },
+  "appliances": [
+    {
+      "name": "Lade elbil",
+      "detail": "40 kWh",
+      "kwh": 40
+    },
+    {
+      "name": "Tørketrommel",
+      "detail": "én runde, ca. 2,5 kWh",
+      "kwh": 2.5
+    },
+    {
+      "name": "Vaskemaskin",
+      "detail": "60 °C, ca. 1 kWh",
+      "kwh": 1
+    },
+    {
+      "name": "Oppvaskmaskin",
+      "detail": "én runde, ca. 1 kWh",
+      "kwh": 1
+    }
+  ],
+  "history": {
+    "lookbackDays": 365,
+    "minGapDays": 14
   }
 }

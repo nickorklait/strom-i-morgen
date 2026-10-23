@@ -7,7 +7,7 @@ const config = loadConfig();
 
 test('the post for a date goes out from 14:00 the day before until midday on the day, once', () => {
   const [feed, story] = unitsFor('2026-10-24', 'tekst', config);
-  assert.deepEqual([feed.key, feed.publishAt, feed.expiresAt, feed.image], ['2026-10-24-feed', '2026-10-23T14:00', '2026-10-24T12:00', 'strom_2026-10-24_feed.png']);
+  assert.deepEqual([feed.key, feed.publishAt, feed.expiresAt, feed.images], ['2026-10-24-feed', '2026-10-23T14:00', '2026-10-24T12:00', ['strom_2026-10-24_feed.png', 'strom_2026-10-24_kostnad.png']]);
   assert.equal(story.caption, null);
   assert.equal(isDue(feed, {}, '2026-10-23T13:15'), false); // prices may be out, but not time yet
   assert.equal(isDue(feed, {}, '2026-10-23T14:15'), true);

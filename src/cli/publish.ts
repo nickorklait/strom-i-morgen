@@ -61,9 +61,12 @@ const runDir = path.join(paths.output, '_publish');
 fs.rmSync(runDir, { recursive: true, force: true });
 fs.mkdirSync(runDir, { recursive: true });
 for (const u of due) {
-  const png = fs.readFileSync(path.join(paths.output, date, u.image));
-  const { width, height } = pngSize(png);
-  fs.writeFileSync(path.join(runDir, u.image.replace(/\.png$/, '.jpg')), pngToJpeg(png, width, height));
+  u.images = u.images.filter((img) => fs.existsSync(path.join(paths.output, date, img)));
+  for (const img of u.images) {
+    const png = fs.readFileSync(path.join(paths.output, date, img));
+    const { width, height } = pngSize(png);
+    fs.writeFileSync(path.join(runDir, img.replace(/\.png$/, '.jpg')), pngToJpeg(png, width, height));
+  }
 }
 
 if (args['dry-run'] || !config.publish.enabled) {
@@ -77,9 +80,9 @@ const host = await tunnelHost(runDir);
 let failed = 0;
 try {
   for (const u of due) {
-    const url = host.url(u.image.replace(/\.png$/, '.jpg'));
+    const urls = u.images.map((img) => host.url(img.replace(/\.png$/, '.jpg')));
     try {
-      const ids = u.kind === 'feed' ? [await ig.publishFeed([url], u.caption ?? '', `Strømpriser for ${date}, time for time`)] : await ig.publishStories([url]);
+      const ids = u.kind === 'feed' ? [await ig.publishFeed(urls, u.caption ?? '', `Strømpriser for ${date}, time for time`)] : await ig.publishStories(urls);
       const permalink = u.kind === 'feed' ? await ig.permalink(ids[0]).catch(() => null) : null;
       recordPublished(u.key, { publishedAt: new Date().toISOString(), kind: u.kind, mediaIds: ids, permalink });
       console.log(`  ✓ ${u.key}${permalink ? `  ${permalink}` : ''}`);
