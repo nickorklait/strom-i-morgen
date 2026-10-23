@@ -10,10 +10,14 @@
   "scripts": {
     "generate": "tsx src/cli/generate.tsx",
     "test": "tsx --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publish": "tsx src/cli/publish.ts",
+    "autopilot": "tsx src/cli/autopilot.ts",
+    "brand": "tsx src/cli/brand.tsx"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "jpeg-js": "^0.4.4",
     "react": "^19.3.1",
     "satori": "^0.63.1"
   },

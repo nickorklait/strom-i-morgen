@@ -1,3 +1,5 @@
 node_modules/
 output/
 .env
+data/instagram-token.json
+output/_publish/

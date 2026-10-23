@@ -18,6 +18,16 @@ export interface Config {
   source: { name: string; url: string; attribution: string; userAgent: string };
   colors: { surface: string; panel: string; line: string; text: string; muted: string; accent: string; bar: string; cheap: string; expensive: string };
   sponsor: { label: string; text: string };
+  publish: {
+    /** Nothing is sent to Instagram unless true. */
+    enabled: boolean;
+    apiVersion: string;
+    stories: boolean;
+    /** Publish from this time the day before (prices are out ~13:00). */
+    time: string;
+    /** Do not publish after this time on the day itself (old news by then). */
+    lastUsefulTime: string;
+  };
 }
 
 export const loadConfig = (): Config => JSON.parse(fs.readFileSync(path.join(ROOT, 'config', 'config.json'), 'utf8'));

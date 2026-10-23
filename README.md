@@ -34,8 +34,23 @@ The output goes to `output/<date>/`:
 - **Fact-check:** every number in the caption must come from the data, so the build stops otherwise.
 - **Sponsor slot:** a placeholder ("Din bedrift her").
 
-## Next steps
+## Publishing to Instagram
 
-- Publishing: reuse the Instagram publisher, scheduler and dashboard from `haslum-poc`, publishing every day at about 14:00 once tomorrow's prices are out.
-- Its own Instagram account, and a GitHub repo with Actions, set up in the same way as the football project.
-- A weekly overview (cheapest/most expensive day), and possibly a comparison with Norgespris.
+- `npm run publish` publishes tomorrow's post (feed + story) from 14:00 the day before until 12:00 on the day itself, and only once. The log is `data/published.json`.
+- `-- --dry-run` converts the images but sends nothing. `-- --now` ignores the time window. `-- --check` tests the token.
+- `npm run autopilot` runs generate followed by publish. The GitHub workflow `.github/workflows/daily.yml` runs it every day (13:15 / 14:15 / 16:15 Oslo winter time) and commits the log and price cache back to the repo.
+- Images reach Instagram through a temporary Cloudflare tunnel inside the job.
+
+### Setup
+
+1. **Instagram account:** professional (Creator), with the profile picture `output/brand/profilbilde.png` (create it with `npm run brand`). The bio and intro text are in `output/brand/tekster.txt`.
+2. **Token:** use the same Meta app as `haslum-poc`. Under *Instagram → API setup with Instagram login*, add the new account and click *Generate token*.
+3. **GitHub:** create a private repo and push this project. Then add the secrets `INSTAGRAM_ACCESS_TOKEN` (the new token) and `TOKEN_ENCRYPTION_KEY` (from `.env`).
+4. Actions → *Strøm i morgen* → *Run workflow*.
+
+## Ideas
+
+- A weekly overview (cheapest and most expensive day).
+- A comparison with Norgespris (check the price first).
+- More price areas (one account per area, or a carousel).
+- A dashboard like the one in `haslum-poc`.

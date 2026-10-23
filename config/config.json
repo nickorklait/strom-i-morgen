@@ -2,9 +2,17 @@
   "brand": {
     "name": "Strøm i morgen",
     "tagline": "Spotpris Østlandet",
-    "hashtags": ["#strømpris", "#strøm", "#østlandet"]
+    "hashtags": [
+      "#strømpris",
+      "#strøm",
+      "#østlandet"
+    ]
   },
-  "area": { "code": "NO1", "name": "Østlandet", "vat": 0.25 },
+  "area": {
+    "code": "NO1",
+    "name": "Østlandet",
+    "vat": 0.25
+  },
   "cheapWindowHours": 3,
   "source": {
     "name": "Hva koster strømmen.no",
@@ -23,5 +31,15 @@
     "cheap": "#1fa874",
     "expensive": "#bf7d10"
   },
-  "sponsor": { "label": "Sponset av", "text": "Din bedrift her" }
+  "sponsor": {
+    "label": "Sponset av",
+    "text": "Din bedrift her"
+  },
+  "publish": {
+    "enabled": true,
+    "apiVersion": "v26.0",
+    "stories": true,
+    "time": "14:00",
+    "lastUsefulTime": "12:00"
+  }
 }

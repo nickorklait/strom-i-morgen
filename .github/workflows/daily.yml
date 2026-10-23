@@ -1,0 +1,64 @@
+# Daily: fetch tomorrow's prices (out ~13:00), build the post and publish it to Instagram.
+# Then commit the publish log, the price cache and the encrypted token back to the repo.
+name: Strøm i morgen
+
+on:
+  schedule:
+    # 12:15, 13:15 and 15:15 UTC = 13:15/14:15/16:15 Oslo winter time (14:15/15:15/17:15 summer time).
+    # Publishing only starts at publish.time (14:00 Oslo); later runs retry if something was late.
+    - cron: '15 12,13,15 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: daily
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Install cloudflared (temporary public URL for the images)
+        run: |
+          curl -fsSL -o /usr/local/bin/cloudflared https://github.com/cloudflare/cloudflared/releases/download/2026.10.2/cloudflared-linux-amd64
+          chmod +x /usr/local/bin/cloudflared
+
+      - name: Generate and publish
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
+        run: npm run autopilot
+
+      - name: Save data
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Whole folder: the publish log MUST get pushed, or a post could go out twice.
+          git add -A -- data
+          if git diff --cached --quiet; then echo "No data changes."; exit 0; fi
+          git commit -m "data: daily run $(date -u +%Y-%m-%dT%H:%MZ)"
+          for attempt in 1 2 3; do
+            git pull --rebase --autostash && git push && exit 0
+            sleep 5
+          done
+          echo "::error::Could not save the publish log."
+          exit 1
+
+      - name: Upload images
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: posts
+          path: output/
+          retention-days: 14
