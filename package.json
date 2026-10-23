@@ -1,0 +1,26 @@
+{
+  "name": "strompris-poc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "POC: daily social media post with tomorrow's electricity prices (NO1), from open data",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "generate": "tsx src/cli/generate.tsx",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "react": "^19.3.1",
+    "satori": "^0.63.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
