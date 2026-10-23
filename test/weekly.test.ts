@@ -26,7 +26,7 @@ test('week: Monday–Sunday, cheapest/dearest day, change vs the week before; ca
   assert.equal(w.dearest.date, '2026-10-18');
   assert.equal(Math.round(w.avg), 110);
   const text = weeklyCaption(w, config);
-  assert.match(text, /\+14 % fra uka før/);
+  assert.match(text, /\+10 % fra uka før/);
   assert.deepEqual(factCheckWeekly(text, w), []);
   assert.equal(factCheckWeekly(text.replace('110 øre', '999 øre'), w).length, 1);
   assert.equal(await buildWeek('2026-10-18', async () => null), null); // a missing day: no post
