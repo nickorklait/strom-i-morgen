@@ -4,6 +4,8 @@ export interface Unit {
   /** "2026-10-24-feed" / "2026-10-24-story": the key in data/published.json. */
   key: string;
   date: string;
+  /** Folder under output/ with the images. */
+  dir: string;
   kind: 'feed' | 'story';
   /** One image (story) or several (feed carousel). */
   images: string[];
@@ -23,8 +25,17 @@ export const addDays = (day: string, n: number) => {
 export function unitsFor(date: string, caption: string, config: Config): Unit[] {
   const publishAt = `${addDays(date, -1)}T${config.publish.time}`;
   const expiresAt = `${date}T${config.publish.lastUsefulTime}`;
-  const units: Unit[] = [{ key: `${date}-feed`, date, kind: 'feed', images: [`strom_${date}_feed.png`, `strom_${date}_kostnad.png`], caption, publishAt, expiresAt }];
-  if (config.publish.stories) units.push({ key: `${date}-story`, date, kind: 'story', images: [`strom_${date}_story.png`], caption: null, publishAt, expiresAt });
+  const units: Unit[] = [{ key: `${date}-feed`, date, dir: date, kind: 'feed', images: [`strom_${date}_feed.png`, `strom_${date}_kostnad.png`, `strom_${date}_norge.png`], caption, publishAt, expiresAt }];
+  if (config.publish.stories) units.push({ key: `${date}-story`, date, dir: date, kind: 'story', images: [`strom_${date}_story.png`], caption: null, publishAt, expiresAt });
+  return units;
+}
+
+/** The Sunday summary: published on the Sunday itself, between weekly.time and weekly.lastUsefulTime. */
+export function weeklyUnits(key: string, sunday: string, caption: string, config: Config): Unit[] {
+  const publishAt = `${sunday}T${config.weekly.time}`;
+  const expiresAt = `${sunday}T${config.weekly.lastUsefulTime}`;
+  const units: Unit[] = [{ key: `${key}-feed`, date: sunday, dir: key, kind: 'feed', images: [`${key}_feed.png`], caption, publishAt, expiresAt }];
+  if (config.publish.stories) units.push({ key: `${key}-story`, date: sunday, dir: key, kind: 'story', images: [`${key}_story.png`], caption: null, publishAt, expiresAt });
   return units;
 }
 

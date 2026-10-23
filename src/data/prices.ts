@@ -24,13 +24,13 @@ export interface HourPrice {
 
 const URL = (date: string, area: string) => `https://www.hvakosterstrommen.no/api/v1/prices/${date.slice(0, 4)}/${date.slice(5, 7)}-${date.slice(8, 10)}_${area}.json`;
 const cacheFile = (date: string, area: string) => path.join(paths.prices, `${date}_${area}.json`);
-export const isCached = (date: string, config: Config) => fs.existsSync(cacheFile(date, config.area.code));
+export const isCached = (date: string, config: Config, area = config.area.code) => fs.existsSync(cacheFile(date, area));
 
 /** Prices for a day: from the local cache, or fetched once and cached. Null when not published yet. */
-export async function fetchDay(date: string, config: Config, fetchFn: typeof fetch = fetch): Promise<RawPrice[] | null> {
-  const file = cacheFile(date, config.area.code);
+export async function fetchDay(date: string, config: Config, fetchFn: typeof fetch = fetch, area = config.area.code): Promise<RawPrice[] | null> {
+  const file = cacheFile(date, area);
   if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, 'utf8'));
-  const res = await fetchFn(URL(date, config.area.code), { headers: { 'User-Agent': config.source.userAgent, Accept: 'application/json' } });
+  const res = await fetchFn(URL(date, area), { headers: { 'User-Agent': config.source.userAgent, Accept: 'application/json' } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Price API: HTTP ${res.status}`);
   const data = (await res.json()) as RawPrice[];

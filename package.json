@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "publish": "tsx src/cli/publish.ts",
     "autopilot": "tsx src/cli/autopilot.ts",
-    "brand": "tsx src/cli/brand.tsx"
+    "brand": "tsx src/cli/brand.tsx",
+    "weekly": "tsx src/cli/weekly.tsx"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2",

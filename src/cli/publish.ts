@@ -8,7 +8,8 @@ import { loadConfig, paths } from '../config.ts';
 import { cloudflaredAvailable, tunnelHost } from '../publish/host.ts';
 import { InstagramClient, InstagramError, refreshToken } from '../publish/instagram.ts';
 import { pngSize, pngToJpeg } from '../publish/jpeg.ts';
-import { addDays, isDue, unitsFor } from '../publish/plan.ts';
+import { addDays, isDue, unitsFor, weeklyUnits, type Unit } from '../publish/plan.ts';
+import { isSunday, weekKey } from '../weekly.ts';
 import { loadCredentials, readPublished, recordPublished, saveCredentials } from '../publish/state.ts';
 
 const { values: args } = parseArgs({
@@ -43,16 +44,23 @@ if (args.check) {
 
 const now = osloNow();
 const date = args.date ?? addDays(now.slice(0, 10), 1);
-const postFile = path.join(paths.output, date, 'post.json');
-if (!fs.existsSync(postFile)) {
-  console.log(`No post for ${date} yet (run npm run generate; prices come ~13:00 the day before).`);
-  process.exit(0);
+const readPost = (dir: string) => {
+  const f = path.join(paths.output, dir, 'post.json');
+  return fs.existsSync(f) ? (JSON.parse(fs.readFileSync(f, 'utf8')) as { caption: string }) : null;
+};
+const candidates: Unit[] = [];
+const daily = readPost(date);
+if (daily) candidates.push(...unitsFor(date, daily.caption, config));
+else console.log(`No post for ${date} yet (run npm run generate; prices come ~13:00 the day before).`);
+const today = now.slice(0, 10);
+if (isSunday(today)) {
+  const weekly = readPost(weekKey(today));
+  if (weekly) candidates.push(...weeklyUnits(weekKey(today), today, weekly.caption, config));
 }
-const post = JSON.parse(fs.readFileSync(postFile, 'utf8')) as { caption: string };
 const published = readPublished();
-const due = unitsFor(date, post.caption, config).filter((u) => isDue(u, published, now, args.now));
+const due = candidates.filter((u) => isDue(u, published, now, args.now));
 if (due.length === 0) {
-  console.log(`Nothing due for ${date} (now ${now.replace('T', ' ')}).`);
+  console.log(`Nothing due (now ${now.replace('T', ' ')}).`);
   process.exit(0);
 }
 console.log(`Due: ${due.map((u) => u.key).join(', ')}`);
@@ -61,9 +69,9 @@ const runDir = path.join(paths.output, '_publish');
 fs.rmSync(runDir, { recursive: true, force: true });
 fs.mkdirSync(runDir, { recursive: true });
 for (const u of due) {
-  u.images = u.images.filter((img) => fs.existsSync(path.join(paths.output, date, img)));
+  u.images = u.images.filter((img) => fs.existsSync(path.join(paths.output, u.dir, img)));
   for (const img of u.images) {
-    const png = fs.readFileSync(path.join(paths.output, date, img));
+    const png = fs.readFileSync(path.join(paths.output, u.dir, img));
     const { width, height } = pngSize(png);
     fs.writeFileSync(path.join(runDir, img.replace(/\.png$/, '.jpg')), pngToJpeg(png, width, height));
   }
@@ -82,7 +90,7 @@ try {
   for (const u of due) {
     const urls = u.images.map((img) => host.url(img.replace(/\.png$/, '.jpg')));
     try {
-      const ids = u.kind === 'feed' ? [await ig.publishFeed(urls, u.caption ?? '', `Strømpriser for ${date}, time for time`)] : await ig.publishStories(urls);
+      const ids = u.kind === 'feed' ? [await ig.publishFeed(urls, u.caption ?? '', u.dir.startsWith('uke') ? 'Strømpriser uka som gikk, dag for dag' : `Strømpriser for ${u.date}, time for time`)] : await ig.publishStories(urls);
       const permalink = u.kind === 'feed' ? await ig.permalink(ids[0]).catch(() => null) : null;
       recordPublished(u.key, { publishedAt: new Date().toISOString(), kind: u.kind, mediaIds: ids, permalink });
       console.log(`  ✓ ${u.key}${permalink ? `  ${permalink}` : ''}`);

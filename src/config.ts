@@ -22,6 +22,10 @@ export interface Config {
   appliances: { name: string; detail: string; kwh: number }[];
   /** "Cheapest day since …": how far back to look, and the minimum gap worth mentioning. */
   history: { lookbackDays: number; minGapDays: number };
+  /** All price areas, north to south (for the "Hele Norge" slide). NO4 has no VAT. */
+  areas: { code: string; name: string; vat: number }[];
+  /** Sunday summary of the week: published on Sunday between these times. */
+  weekly: { enabled: boolean; time: string; lastUsefulTime: string };
   publish: {
     /** Nothing is sent to Instagram unless true. */
     enabled: boolean;

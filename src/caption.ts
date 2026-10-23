@@ -2,6 +2,7 @@ import type { Config } from './config.ts';
 import { endHour, ore, type DayStats } from './data/prices.ts';
 import { kr, type Cost } from './costs.ts';
 import type { PriceRecord } from './data/history.ts';
+import type { AreaAverage } from './render/norway.tsx';
 
 const DAYS = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
 const MONTHS = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
@@ -21,6 +22,8 @@ export interface Extras {
   record: PriceRecord | null;
   lastYear: { pct: number; avg: number } | null;
   costs: Cost[];
+  /** All price areas (for the "Hele Norge" line and slide). */
+  areas?: AreaAverage[];
 }
 
 const withYear = (day: string, ref: string) => `${dateText(day)}${day.slice(0, 4) !== ref.slice(0, 4) ? ` ${day.slice(0, 4)}` : ''}`;
@@ -34,6 +37,14 @@ export function recordText(r: PriceRecord | null, date: string): string | null {
 
 /** "−34 % mot samme dag i fjor". */
 export const lastYearText = (v: { pct: number } | null) => (v ? `${v.pct > 0 ? '+' : v.pct < 0 ? '−' : '±'}${Math.abs(v.pct)} % mot samme dag i fjor` : null);
+
+/** "🇳🇴 Hele Norge: billigst i Nord-Norge (3 øre), dyrest i Vestlandet (74 øre). Se bilde 3." */
+function areaLine(areas?: AreaAverage[]): string {
+  if (!areas || areas.length < 2) return '';
+  const lo = areas.reduce((a, b) => (b.avg < a.avg ? b : a));
+  const hi = areas.reduce((a, b) => (b.avg > a.avg ? b : a));
+  return `🇳🇴 Hele Norge: billigst i ${lo.name} (${ore(lo.avg)} øre), dyrest i ${hi.name} (${ore(hi.avg)} øre). Se bilde 3.`;
+}
 
 export function caption(date: string, s: DayStats, todayAvg: number | null, config: Config, extras: Extras = { record: null, lastYear: null, costs: [] }): string {
   const change = changeText(s.avg, todayAvg);
@@ -51,6 +62,7 @@ export function caption(date: string, s: DayStats, todayAvg: number | null, conf
     `Tips: Sett på vaskemaskin, oppvask og lading kl. ${s.cheapest.from}–${s.cheapest.to}.`,
     extras.costs[0] ? `🚗 ${extras.costs[0].name} (${config.appliances[0].kwh} kWh): ca. ${kr(extras.costs[0].cheap)} kl. ${s.cheapest.from}–${s.cheapest.to}, mot ${kr(extras.costs[0].dear)} kl. ${s.dearest.from}–${s.dearest.to}. Se bilde 2 for mer.` : '',
     '',
+    areaLine(extras.areas),
     `Spotpris inkl. mva, uten nettleie og påslag. ${config.source.attribution}.`,
     config.brand.hashtags.join(' '),
   ]
@@ -74,6 +86,8 @@ export function factCheckNumbers(text: string, date: string, s: DayStats, todayA
   for (const c of extras?.costs ?? []) for (const v of [c.cheap, c.dear]) allowed.add(Number(kr(v).replace(' kr', '').replace(',', '.')));
   for (const a of config?.appliances ?? []) allowed.add(a.kwh);
   allowed.add(2); // "bilde 2"
+  allowed.add(3); // "bilde 3"
+  for (const a of extras?.areas ?? []) allowed.add(ore(a.avg));
   const body = text.replace(/#[\p{L}\p{N}_]+/gu, ' ').replace(/NO\d/g, ' ');
   return [...body.matchAll(/-?\d+(?:[.,]\d+)?/g)]
     .map((m) => m[0])

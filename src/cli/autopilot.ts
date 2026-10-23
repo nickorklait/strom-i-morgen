@@ -3,5 +3,6 @@ import { spawnSync } from 'node:child_process';
 
 const run = (script: string) => spawnSync('npm', ['run', script], { stdio: 'inherit', shell: true }).status === 0;
 const generated = run('generate');
-const published = generated && run('publish');
-if (!generated || !published) process.exitCode = 1;
+const weekly = run('weekly'); // only does something on Sundays
+const published = run('publish');
+if (!generated || !weekly || !published) process.exitCode = 1;

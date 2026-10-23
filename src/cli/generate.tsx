@@ -10,6 +10,7 @@ import { loadConfig, paths } from '../config.ts';
 import { dayStats, fetchDay, toHourly } from '../data/prices.ts';
 import { DayAhead } from '../render/dayAhead.tsx';
 import { CostCard } from '../render/costCard.tsx';
+import { Norway, type AreaAverage } from '../render/norway.tsx';
 import { costs } from '../costs.ts';
 import { averageFetcher, recordFor, vsLastYear } from '../data/history.ts';
 import { lastYearText, recordText, type Extras } from '../caption.ts';
@@ -43,7 +44,22 @@ const extras: Extras = {
   record: await recordFor(date, stats.avg, average, config),
   lastYear: await vsLastYear(date, stats.avg, average),
   costs: costs(stats, config),
+  areas: await areaAverages(date),
 };
+
+/** Tomorrow's average in every price area (each area with its own VAT rule). */
+async function areaAverages(day: string): Promise<AreaAverage[]> {
+  const out: AreaAverage[] = [];
+  for (const a of config.areas) {
+    try {
+      const r = await fetchDay(day, config, fetch, a.code);
+      if (r) out.push({ code: a.code, name: a.name, vat: a.vat, avg: dayStats(toHourly(r, a.vat), config.cheapWindowHours).avg });
+    } catch {
+      // A missing area just leaves it out of the slide.
+    }
+  }
+  return out.length === config.areas.length ? out : [];
+}
 const badges = [
   ...(extras.record ? [{ text: recordText(extras.record, date)!, tone: extras.record.kind === 'cheapest' ? ('good' as const) : ('warn' as const) }] : []),
   ...(extras.lastYear ? [{ text: lastYearText(extras.lastYear)!, tone: 'neutral' as const }] : []),
@@ -63,6 +79,11 @@ for (const format of ['feed', 'story'] as Format[]) {
 const costFile = path.join(outDir, `strom_${date}_kostnad.png`);
 fs.writeFileSync(costFile, await renderPng(<CostCard date={date} s={stats} items={extras.costs} config={config} format="feed" />, SIZES.feed));
 console.log(`  ✓ ${path.relative(process.cwd(), costFile)}`);
+if (extras.areas?.length) {
+  const norwayFile = path.join(outDir, `strom_${date}_norge.png`);
+  fs.writeFileSync(norwayFile, await renderPng(<Norway date={date} areas={extras.areas} config={config} format="feed" />, SIZES.feed));
+  console.log(`  ✓ ${path.relative(process.cwd(), norwayFile)}`);
+}
 fs.writeFileSync(path.join(outDir, 'caption.txt'), text);
 fs.writeFileSync(path.join(outDir, 'post.json'), JSON.stringify({ date, area: config.area.code, hours, stats, todayAvg, extras, caption: text }, null, 2));
 console.log(`\n${text}`);

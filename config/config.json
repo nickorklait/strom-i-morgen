@@ -67,5 +67,37 @@
   "history": {
     "lookbackDays": 365,
     "minGapDays": 14
+  },
+  "areas": [
+    {
+      "code": "NO4",
+      "name": "Nord-Norge",
+      "vat": 0
+    },
+    {
+      "code": "NO3",
+      "name": "Midt-Norge",
+      "vat": 0.25
+    },
+    {
+      "code": "NO5",
+      "name": "Vestlandet",
+      "vat": 0.25
+    },
+    {
+      "code": "NO1",
+      "name": "Østlandet",
+      "vat": 0.25
+    },
+    {
+      "code": "NO2",
+      "name": "Sørlandet",
+      "vat": 0.25
+    }
+  ],
+  "weekly": {
+    "enabled": true,
+    "time": "15:00",
+    "lastUsefulTime": "23:00"
   }
 }
