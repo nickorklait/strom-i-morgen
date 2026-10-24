@@ -15,6 +15,7 @@ import { Cover } from '../render/cover.tsx';
 import { DayAhead } from '../render/dayAhead.tsx';
 import { EvCard } from '../render/evCard.tsx';
 import { renderPng, SIZES } from '../render/render.ts';
+import { recordGenerate } from '../status.ts';
 
 const { values: args } = parseArgs({ options: { date: { type: 'string' } } });
 const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Oslo' }).format(new Date());
@@ -28,6 +29,19 @@ const days = results.filter(isOk);
 for (const r of results) {
   if (isOk(r)) console.log(`  ${r.config.area.code} ${r.config.area.name}: ${r.validation.passed.length} checks passed, avg ${ore(r.stats.avg)} øre`);
   else console.warn(`  ! ${r.config.area.code} ${r.config.area.name} left out: ${r.error}`);
+}
+// For the dashboard; nothing is recorded before the prices are out (that is not a problem).
+if (results.some((r) => isOk(r) || r.validation)) {
+  recordGenerate(
+    date,
+    results.map((r) => {
+      const window = (w: { from: string; to: string; avg: number }) => ({ from: w.from, to: w.to, avg: w.avg });
+      const base = { code: r.config.area.code, name: r.config.area.name, passed: r.validation?.passed.length ?? 0, warnings: r.validation?.warnings ?? [] };
+      return isOk(r)
+        ? { ...base, ok: true, errors: [], avg: r.stats.avg, cheapest: window(r.stats.cheapest), dearest: window(r.stats.dearest) }
+        : { ...base, ok: false, errors: r.validation?.errors.length ? r.validation.errors : [r.error] };
+    }),
+  );
 }
 
 if (days.length === 0) {

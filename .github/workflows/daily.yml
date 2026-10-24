@@ -1,7 +1,8 @@
 # Daily: fetch tomorrow's prices (out ~13:00), validate them, build the post and publish it to Instagram.
 # One job per profile. "norge" is the national account (all price areas in one post); the per-area
 # profiles (no1 … no5) are still available if an account per area is wanted later. Then the publish logs, the price
-# cache and the encrypted tokens are committed back to the repo.
+# cache and the encrypted tokens are committed back to the repo, and the dashboard is deployed to
+# Cloudflare Pages. Also runs when someone uses a button on the dashboard (repository_dispatch).
 name: Strøm i morgen
 
 on:
@@ -9,7 +10,14 @@ on:
     # 12:15, 13:15 and 15:15 UTC = 13:15/14:15/16:15 Oslo winter time (14:15/15:15/17:15 summer time).
     # Publishing starts at publish.time (14:00 Oslo); later runs retry if something was late.
     - cron: '15 12,13,15 * * *'
+  repository_dispatch:
+    types: [dashboard-action]
   workflow_dispatch:
+    inputs:
+      publish_now:
+        description: 'Publish one post now (key from the dashboard, e.g. 2026-10-25-feed). Empty = normal run.'
+        required: false
+        default: ''
 
 concurrency:
   group: daily
@@ -41,13 +49,43 @@ jobs:
           curl -fsSL -o /usr/local/bin/cloudflared https://github.com/cloudflare/cloudflared/releases/download/2026.10.2/cloudflared-linux-amd64
           chmod +x /usr/local/bin/cloudflared
 
+      - name: Apply dashboard action
+        id: control
+        if: github.event_name == 'repository_dispatch'
+        env:
+          STROM_PROFILE: ${{ matrix.profile }}
+          # { action, by } from the dashboard; validated again by the control script.
+          DASHBOARD_ACTION: ${{ toJSON(github.event.client_payload) }}
+        run: npm run control
+
       - name: Generate and publish (${{ matrix.profile }})
         env:
           STROM_PROFILE: ${{ matrix.profile }}
           # norge (the existing account) uses INSTAGRAM_ACCESS_TOKEN; per-area accounts INSTAGRAM_ACCESS_TOKEN_NO1 … _NO5.
           INSTAGRAM_ACCESS_TOKEN: ${{ matrix.profile == 'norge' && secrets.INSTAGRAM_ACCESS_TOKEN || secrets[format('INSTAGRAM_ACCESS_TOKEN_{0}', matrix.profile)] }}
           TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
-        run: npm run autopilot
+          PUBLISH_NOW: ${{ steps.control.outputs.publish_key || inputs.publish_now }}
+        run: |
+          if [ -n "$PUBLISH_NOW" ]; then
+            # "Publiser nå": build that post and publish only it (never twice: the publish log decides).
+            dir="${PUBLISH_NOW%-feed}"; dir="${dir%-story}"
+            if [[ "$dir" == uke-* ]]; then npm run weekly; else npm run generate -- --date "$dir"; fi
+            npm run publish -- --only "$PUBLISH_NOW"
+          else
+            npm run autopilot
+          fi
+
+      - name: Build dashboard
+        if: always()
+        env:
+          STROM_PROFILE: ${{ matrix.profile }}
+          # Only to show how long the Instagram access lasts; nothing is published here.
+          INSTAGRAM_ACCESS_TOKEN: ${{ matrix.profile == 'norge' && secrets.INSTAGRAM_ACCESS_TOKEN || secrets[format('INSTAGRAM_ACCESS_TOKEN_{0}', matrix.profile)] }}
+          TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
+        run: |
+          # Today's post too, so the dashboard has its images (prices are cached; nothing is published).
+          npm run generate -- --date "$(TZ=Europe/Oslo date +%F)" || true
+          npm run dashboard
 
       - name: Save data
         if: always()
@@ -64,6 +102,35 @@ jobs:
           done
           echo "::error::Could not save the publish log."
           exit 1
+
+      - name: Deploy dashboard (Cloudflare Pages)
+        if: always()
+        env:
+          STROM_PROFILE: ${{ matrix.profile }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_PROJECT: ${{ vars.PAGES_PROJECT || 'strom-i-morgen' }}
+          ACCESS_TEAM_DOMAIN: ${{ vars.ACCESS_TEAM_DOMAIN || 'fotball-resultater-pages.cloudflareaccess.com' }}
+          ACCESS_AUD: ${{ secrets.ACCESS_AUD }}
+          DASHBOARD_GITHUB_TOKEN: ${{ secrets.DASHBOARD_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "Cloudflare not configured yet; skipping dashboard deploy."
+            exit 0
+          fi
+          rm -rf "output/$STROM_PROFILE/_publish"
+          cd cloud
+          npx --yes wrangler@4 pages project create "$PAGES_PROJECT" --production-branch=main >/dev/null 2>&1 || true
+          # Settings for the dashboard buttons (cloud/functions/api/action.ts), copied from the GitHub secrets.
+          if [ -n "$ACCESS_TEAM_DOMAIN" ] && [ -n "$ACCESS_AUD" ] && [ -n "$DASHBOARD_GITHUB_TOKEN" ]; then
+            printf '%s' "$ACCESS_TEAM_DOMAIN" | npx --yes wrangler@4 pages secret put ACCESS_TEAM_DOMAIN --project-name="$PAGES_PROJECT" >/dev/null || echo "::warning::Could not set ACCESS_TEAM_DOMAIN"
+            printf '%s' "$ACCESS_AUD" | npx --yes wrangler@4 pages secret put ACCESS_AUD --project-name="$PAGES_PROJECT" >/dev/null || echo "::warning::Could not set ACCESS_AUD"
+            printf '%s' "$GITHUB_REPOSITORY" | npx --yes wrangler@4 pages secret put GITHUB_REPO --project-name="$PAGES_PROJECT" >/dev/null || echo "::warning::Could not set GITHUB_REPO"
+            printf '%s' "$DASHBOARD_GITHUB_TOKEN" | npx --yes wrangler@4 pages secret put GITHUB_TOKEN --project-name="$PAGES_PROJECT" >/dev/null || echo "::warning::Could not set GITHUB_TOKEN"
+          else
+            echo "Dashboard buttons not configured yet (variable ACCESS_TEAM_DOMAIN, secrets ACCESS_AUD and DASHBOARD_GITHUB_TOKEN)."
+          fi
+          npx --yes wrangler@4 pages deploy "../output/$STROM_PROFILE" --project-name="$PAGES_PROJECT" --branch=main --commit-dirty=true
 
       - name: Upload images
         if: always()

@@ -53,7 +53,6 @@ The output goes to `output/<date>/`:
 - A weekly overview (cheapest and most expensive day).
 - A comparison with Norgespris (check the price first).
 - More price areas (one account per area, or a carousel).
-- A dashboard like the one in `haslum-poc`.
 
 ## One account for all of Norway (national mode, the default)
 
@@ -81,6 +80,22 @@ The per-area profiles still exist if separate accounts are wanted later. `STROM_
 2. In the same Meta app: add it as an Instagram Tester, accept the invite, and generate a token.
 3. Add the GitHub secret `INSTAGRAM_ACCESS_TOKEN_NO5` (`norge` uses `INSTAGRAM_ACCESS_TOKEN`).
 4. Set `"publish": { "enabled": true }` in `config/profiles/no5.json`, add `no5` to the workflow matrix, and push.
+
+## Dashboard
+
+`npm run dashboard` builds `output/<profile>/index.html`. In the cloud it is built after every run and deployed to Cloudflare Pages (project `strom-i-morgen`), behind Cloudflare Access (email login).
+
+- **Is everything OK:** a green "Alt i orden", or a list of problems: a post that should have gone out (checked live in the browser: a warning after 60 min, an error after the last retry), areas left out by the data check, failed publishing, a pause, or Instagram access running out. It also warns if the page has not been updated for a day (the runs may have stopped).
+- **Next post:** all images, the caption, and the buttons *Publiser nå*, *Hopp over* and *Rediger tekst*.
+- **Prices and data check:** per area, the average, cheapest and dearest 3 hours, the checks passed, and a link to the raw data.
+- **Published** posts with links, **settings** (stories, Sunday summary), the **activity log** (who did what), and **"Hvis noe skjer"**: what to do when something goes wrong.
+- **Buttons:** the page posts to `/api/action` (`cloud/functions/`). The function checks the Access login and forwards the action to GitHub (`repository_dispatch`); the workflow applies it to `data/<profile>/controls.json`, runs, and redeploys the page (3–5 minutes).
+
+**Setup (once):**
+
+1. GitHub secrets in this repo: `CLOUDFLARE_API_TOKEN` (Pages: Edit) and `CLOUDFLARE_ACCOUNT_ID`, the same as for the football project. The next run creates the Pages project and deploys.
+2. Cloudflare: *Workers & Pages → strom-i-morgen → Settings → Enable access policy*, and allow your email (as for football). Copy the application's *AUD tag*.
+3. GitHub secrets: `ACCESS_AUD` (the AUD tag) and `DASHBOARD_GITHUB_TOKEN` (fine-grained token for this repo, *Contents: Read and write*). Optional variable `ACCESS_TEAM_DOMAIN` if it is not `fotball-resultater-pages.cloudflareaccess.com`.
 
 ## Data validation
 

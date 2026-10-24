@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { loadConfig, paths } from '../config.ts';
+import { applySettings, readControls } from '../controls.ts';
 import { averageFetcher } from '../data/history.ts';
 import { ore } from '../data/prices.ts';
 import { areaConfig, factCheckAgainst, orderedAreas } from '../national.ts';
@@ -12,7 +13,7 @@ import { weekChangeText } from '../render/weekly.tsx';
 import { buildWeek, isSunday, weekKey } from '../weekly.ts';
 
 const { values: args } = parseArgs({ options: { end: { type: 'string' } } });
-const config = loadConfig();
+const config = applySettings(loadConfig(), readControls().settings);
 const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Oslo' }).format(new Date());
 const sunday = args.end ?? today;
 
