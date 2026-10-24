@@ -1,14 +1,117 @@
 {
   "publish": {
-    "at": "2026-10-24T10:59:47.132Z",
+    "at": "2026-10-24T16:03:10.412Z",
     "paused": false,
-    "published": [],
+    "published": [
+      "2026-10-25-feed",
+      "2026-10-25-story"
+    ],
     "failed": [],
     "skipped": []
   },
   "generate": {
+    "2026-10-25": {
+      "at": "2026-10-24T16:01:09.112Z",
+      "areas": [
+        {
+          "code": "NO1",
+          "name": "Østlandet",
+          "passed": 9,
+          "warnings": [],
+          "ok": true,
+          "errors": [],
+          "avg": 75.53620000000001,
+          "cheapest": {
+            "from": "04",
+            "to": "07",
+            "avg": 26.471666666666664
+          },
+          "dearest": {
+            "from": "16",
+            "to": "19",
+            "avg": 147.26375
+          }
+        },
+        {
+          "code": "NO5",
+          "name": "Vestlandet",
+          "passed": 9,
+          "warnings": [],
+          "ok": true,
+          "errors": [],
+          "avg": 80.96305,
+          "cheapest": {
+            "from": "05",
+            "to": "08",
+            "avg": 29.886666666666667
+          },
+          "dearest": {
+            "from": "16",
+            "to": "19",
+            "avg": 150.54333333333332
+          }
+        },
+        {
+          "code": "NO2",
+          "name": "Sørlandet",
+          "passed": 9,
+          "warnings": [],
+          "ok": true,
+          "errors": [],
+          "avg": 75.57955000000001,
+          "cheapest": {
+            "from": "05",
+            "to": "08",
+            "avg": 25.82166666666667
+          },
+          "dearest": {
+            "from": "16",
+            "to": "19",
+            "avg": 150.46916666666667
+          }
+        },
+        {
+          "code": "NO3",
+          "name": "Midt-Norge",
+          "passed": 9,
+          "warnings": [],
+          "ok": true,
+          "errors": [],
+          "avg": 67.7067,
+          "cheapest": {
+            "from": "05",
+            "to": "08",
+            "avg": 38.98333333333334
+          },
+          "dearest": {
+            "from": "15",
+            "to": "18",
+            "avg": 105.42791666666666
+          }
+        },
+        {
+          "code": "NO4",
+          "name": "Nord-Norge",
+          "passed": 9,
+          "warnings": [],
+          "ok": true,
+          "errors": [],
+          "avg": 16.011239999999997,
+          "cheapest": {
+            "from": "19",
+            "to": "22",
+            "avg": 14.363666666666667
+          },
+          "dearest": {
+            "from": "00",
+            "to": "02",
+            "avg": 17.883666666666667
+          }
+        }
+      ]
+    },
     "2026-10-24": {
-      "at": "2026-10-24T10:59:49.253Z",
+      "at": "2026-10-24T16:03:12.598Z",
       "areas": [
         {
           "code": "NO1",
