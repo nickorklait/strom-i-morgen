@@ -54,3 +54,38 @@ The output goes to `output/<date>/`:
 - A comparison with Norgespris (check the price first).
 - More price areas (one account per area, or a carousel).
 - A dashboard like the one in `haslum-poc`.
+
+## One account per price area (profiles)
+
+`STROM_PROFILE` selects the area: `no1` (Østlandet, the default), `no2` (Sørlandet), `no3` (Midt-Norge), `no4` (Nord-Norge, no VAT) or `no5` (Vestlandet).
+
+- **Configuration:** shared settings are in `config/config.json`, and each area's own settings (area, name, hashtags, `publish.enabled`) in `config/profiles/<profile>.json`.
+- **Folders:** images go to `output/<profile>/`, and the publish log and encrypted token to `data/<profile>/`. The price cache in `data/prices/` is shared.
+- **Running locally:** `$env:STROM_PROFILE="no5"; npm run generate`.
+- **In the cloud:** the workflow runs one job per area. Areas that are switched off only build images.
+
+**A new account (e.g. Vestlandet):**
+
+1. Create the Instagram account (Creator), and set its profile picture and bio with `STROM_PROFILE=no5 npm run brand`.
+2. In the same Meta app: add it as an Instagram Tester, accept the invite, and generate a token.
+3. Add the GitHub secret `INSTAGRAM_ACCESS_TOKEN_NO5` (NO1 uses `INSTAGRAM_ACCESS_TOKEN`).
+4. Set `"publish": { "enabled": true }` in `config/profiles/no5.json` and push.
+
+## Data validation
+
+Before a post is made, the day is checked. **Any error stops the post.**
+
+- 23, 24 or 25 hours (or the 15-minute equivalents).
+- No gaps, with the day covered from 00 to 24.
+- All values are numbers, within −1 to 15 kr/kWh.
+- One exchange rate per day.
+- NOK = EUR × exchange rate for every hour.
+- The exchange rate equals one of **Norges Bank's official EUR/NOK rates** from the preceding days. If Norges Bank cannot be reached, this check only gives a warning.
+
+The results are stored in `post.json` (`validation`).
+
+In addition, every number in the caption must come from the data (the fact-check). The comparison with last year is shown in øre instead of percent when last year's price was under 20 øre, because "+315 %" on a few øre is misleading.
+
+## Source in the caption
+
+The caption ends with one short line: "Spotpris inkl. mva, uten nettleie. Kilde: hvakosterstrommen.no" ("… uten mva …" in Nord-Norge). The image carries the full credit. It is short, but shows where the numbers come from, which builds trust and is what the data provider asks for.

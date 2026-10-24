@@ -1,9 +1,10 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT } from '../config.ts';
+import { paths, ROOT } from '../config.ts';
 
-const DATA = path.join(ROOT, 'data');
+// Per profile (one Instagram account per price area).
+const DATA = paths.state;
 const LOG = path.join(DATA, 'published.json');
 const TOKEN = path.join(DATA, 'instagram-token.json');
 const ENV = path.join(ROOT, '.env');
@@ -28,6 +29,7 @@ export function readPublished(): Record<string, PublishedEntry> {
 }
 
 export function recordPublished(key: string, entry: PublishedEntry): void {
+  fs.mkdirSync(DATA, { recursive: true });
   const all = readPublished();
   all[key] = entry;
   fs.writeFileSync(LOG, JSON.stringify(all, null, 2));
@@ -85,6 +87,7 @@ export function loadCredentials(): Credentials | null {
 }
 
 export function saveCredentials(c: Credentials): void {
+  fs.mkdirSync(DATA, { recursive: true });
   const key = encryptionKey();
   if (!key) {
     fs.writeFileSync(TOKEN, JSON.stringify(c, null, 2));

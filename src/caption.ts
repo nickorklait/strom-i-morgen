@@ -1,4 +1,4 @@
-import type { Config } from './config.ts';
+import { priceBasis, type Config } from './config.ts';
 import { endHour, ore, type DayStats } from './data/prices.ts';
 import { kr, type Cost } from './costs.ts';
 import type { PriceRecord } from './data/history.ts';
@@ -36,7 +36,17 @@ export function recordText(r: PriceRecord | null, date: string): string | null {
 }
 
 /** "−34 % mot samme dag i fjor". */
-export const lastYearText = (v: { pct: number } | null) => (v ? `${v.pct > 0 ? '+' : v.pct < 0 ? '−' : '±'}${Math.abs(v.pct)} % mot samme dag i fjor` : null);
+export function lastYearText(v: { pct: number; avg: number } | null, now: number): string | null {
+  if (!v) return null;
+  const sign = (n: number) => (n > 0 ? '+' : n < 0 ? '−' : '±');
+  // Percentages on tiny amounts mislead (5 → 22 øre is "+315 %"): below 20 øre last year, show øre instead.
+  if (v.avg < SMALL_BASE) {
+    const d = ore(now) - ore(v.avg);
+    return `${sign(d)}${Math.abs(d)} øre mot samme dag i fjor`;
+  }
+  return `${sign(v.pct)}${Math.abs(v.pct)} % mot samme dag i fjor`;
+}
+export const SMALL_BASE = 20;
 
 /** "🇳🇴 Hele Norge: billigst i Nord-Norge (3 øre), dyrest i Vestlandet (74 øre). Se bilde 3." */
 function areaLine(areas?: AreaAverage[]): string {
@@ -54,7 +64,7 @@ export function caption(date: string, s: DayStats, todayAvg: number | null, conf
     `Strøm i morgen, ${dayName(date)} ${dateText(date)} (${config.area.name}) ⚡`,
     '',
     `Snitt: ${ore(s.avg)} øre/kWh${change ? ` – ${change}${trend}` : ''}`,
-    [recordText(extras.record, date), lastYearText(extras.lastYear)].filter(Boolean).length ? `📅 ${[recordText(extras.record, date), lastYearText(extras.lastYear)].filter(Boolean).join(' · ')}` : '',
+    [recordText(extras.record, date), lastYearText(extras.lastYear, s.avg)].filter(Boolean).length ? `📅 ${[recordText(extras.record, date), lastYearText(extras.lastYear, s.avg)].filter(Boolean).join(' · ')}` : '',
     `💚 Billigst: kl. ${s.cheapest.from}–${s.cheapest.to} (${ore(s.cheapest.avg)} øre i snitt)`,
     `🔶 Dyrest: kl. ${s.max.hour}–${maxEnd} (${ore(s.max.ore)} øre)`,
     s.negativeHours > 0 ? `Obs: negativ pris i ${s.negativeHours} timer!` : '',
@@ -63,7 +73,7 @@ export function caption(date: string, s: DayStats, todayAvg: number | null, conf
     extras.costs[0] ? `🚗 ${extras.costs[0].name} (${config.appliances[0].kwh} kWh): ca. ${kr(extras.costs[0].cheap)} kl. ${s.cheapest.from}–${s.cheapest.to}, mot ${kr(extras.costs[0].dear)} kl. ${s.dearest.from}–${s.dearest.to}. Se bilde 2 for mer.` : '',
     '',
     areaLine(extras.areas),
-    `Spotpris inkl. mva, uten nettleie og påslag. ${config.source.attribution}.`,
+    `${priceBasis(config).replace(' og påslag', '')}. ${config.source.short}`,
     config.brand.hashtags.join(' '),
   ]
     .filter((l, i, a) => l !== '' || a[i - 1] !== '')
@@ -81,7 +91,10 @@ export function factCheckNumbers(text: string, date: string, s: DayStats, todayA
     ...Array.from({ length: 25 }, (_, h) => h), // clock hours
   ]);
   if (todayAvg !== null) allowed.add(Math.abs(ore(s.avg) - ore(todayAvg)));
-  if (extras?.lastYear) allowed.add(Math.abs(extras.lastYear.pct));
+  if (extras?.lastYear) {
+    allowed.add(Math.abs(extras.lastYear.pct));
+    allowed.add(Math.abs(ore(s.avg) - ore(extras.lastYear.avg)));
+  }
   if (extras?.record?.since) [Number(extras.record.since.slice(8, 10)), Number(extras.record.since.slice(0, 4))].forEach((n) => allowed.add(n));
   for (const c of extras?.costs ?? []) for (const v of [c.cheap, c.dear]) allowed.add(Number(kr(v).replace(' kr', '').replace(',', '.')));
   for (const a of config?.appliances ?? []) allowed.add(a.kwh);

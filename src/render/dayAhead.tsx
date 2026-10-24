@@ -2,7 +2,7 @@
 // Chart rules: bars <= 24px with a 4px rounded top and square base, 1px solid recessive gridlines,
 // neutral bars with only two highlights (cheapest window, most expensive hour), always labelled in text.
 
-import type { Config } from '../config.ts';
+import { priceBasis, vatShort, type Config } from '../config.ts';
 import { dateText, dayName, changeText } from '../caption.ts';
 import { endHour, ore, type DayStats, type HourPrice } from '../data/prices.ts';
 import { SIZES, type Format } from './render.ts';
@@ -167,7 +167,7 @@ export function DayAhead({ date, hours, stats: s, todayAvg, config, format, badg
 
         {/* chart */}
         <div style={{ display: 'flex', flexDirection: 'column', marginTop: story ? 44 : 26, backgroundColor: c.panel, borderRadius: 16, padding: '18px 18px 12px' }}>
-          <span style={{ fontFamily: TEXT, fontWeight: 600, fontSize: 19, color: c.muted, marginBottom: 14 }}>Pris per time · øre/kWh inkl. mva</span>
+          <span style={{ fontFamily: TEXT, fontWeight: 600, fontSize: 19, color: c.muted, marginBottom: 14 }}>{`Pris per time · øre/kWh ${vatShort(config)}`}</span>
           <Chart hours={hours} s={s} c={c} width={width - pad * 2 - 36} height={story ? 600 : 500} />
         </div>
 
@@ -176,7 +176,7 @@ export function DayAhead({ date, hours, stats: s, todayAvg, config, format, badg
           <span style={{ fontFamily: TEXT, fontWeight: 600, fontSize: story ? 30 : 26 }}>{`Vask og lad kl. ${s.cheapest.from}–${s.cheapest.to}${s.negativeHours ? ` · negativ pris i ${s.negativeHours} t` : ''}`}</span>
         </div>
 
-        <span style={{ fontFamily: TEXT, fontSize: 17, color: c.muted, marginTop: 'auto', marginBottom: 14 }}>{`${config.source.attribution} · Spotpris inkl. mva, uten nettleie og påslag`}</span>
+        <span style={{ fontFamily: TEXT, fontSize: 17, color: c.muted, marginTop: 'auto', marginBottom: 14 }}>{`${config.source.attribution} · ${priceBasis(config)}`}</span>
       </div>
 
       {/* sponsor slot */}

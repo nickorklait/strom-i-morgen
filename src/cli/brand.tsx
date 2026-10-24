@@ -3,7 +3,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { loadConfig, paths } from '../config.ts';
+import { loadConfig, paths, priceBasis } from '../config.ts';
 import { renderPng, SIZES } from '../render/render.ts';
 
 const config = loadConfig();
@@ -46,7 +46,7 @@ const intro = (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 30, marginTop: 56 }}>
         {point('Ca. kl. 14 hver dag', 'Når prisene for neste døgn er klare')}
         {point('Billigste timer', 'Når du bør vaske, tørke og lade')}
-        {point('Time for time', 'Spotpris inkl. mva, uten nettleie og påslag')}
+        {point('Time for time', priceBasis(config))}
       </div>
       <span style={{ fontSize: 20, color: c.muted, marginTop: 'auto', marginBottom: 18 }}>{`${config.source.attribution} · Prisområde ${config.area.code}`}</span>
     </div>
@@ -78,7 +78,7 @@ Hver dag rundt kl. 14 – når prisene for neste døgn er klare – legger vi ut
 💚 Se når strømmen er billigst, og flytt vask, tørk og lading dit.
 🔶 Se når den er dyrest, og unngå de timene.
 
-Prisene er spotpris inkl. mva, uten nettleie og påslag fra strømselskapet. ${config.source.attribution}.
+Prisene er ${priceBasis(config).toLowerCase()} fra strømselskapet. ${config.source.attribution}.
 
 Følg kontoen og slå på varsler for å få prisen hver dag.
 ${config.brand.hashtags.join(' ')}

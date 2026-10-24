@@ -1,0 +1,18 @@
+{
+  "brand": {
+    "tagline": "Spotpris Sørlandet",
+    "hashtags": [
+      "#strømpris",
+      "#strøm",
+      "#sørlandet"
+    ]
+  },
+  "area": {
+    "code": "NO2",
+    "name": "Sørlandet",
+    "vat": 0.25
+  },
+  "publish": {
+    "enabled": false
+  }
+}

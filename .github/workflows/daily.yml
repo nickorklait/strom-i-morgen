@@ -1,11 +1,13 @@
-# Daily: fetch tomorrow's prices (out ~13:00), build the post and publish it to Instagram.
-# Then commit the publish log, the price cache and the encrypted token back to the repo.
+# Daily: fetch tomorrow's prices (out ~13:00), validate them, build the post and publish it to Instagram.
+# One job per price area (profile). Only profiles with "publish.enabled" in config/profiles/<p>.json
+# and a token secret publish; the others just build their images. Then the publish logs, the price
+# cache and the encrypted tokens are committed back to the repo.
 name: Strøm i morgen
 
 on:
   schedule:
     # 12:15, 13:15 and 15:15 UTC = 13:15/14:15/16:15 Oslo winter time (14:15/15:15/17:15 summer time).
-    # Publishing only starts at publish.time (14:00 Oslo); later runs retry if something was late.
+    # Publishing starts at publish.time (14:00 Oslo); later runs retry if something was late.
     - cron: '15 12,13,15 * * *'
   workflow_dispatch:
 
@@ -20,6 +22,12 @@ jobs:
   daily:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      # One area at a time: the jobs commit to the same repo.
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        profile: [no1, no2, no3, no4, no5]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -33,9 +41,11 @@ jobs:
           curl -fsSL -o /usr/local/bin/cloudflared https://github.com/cloudflare/cloudflared/releases/download/2026.10.2/cloudflared-linux-amd64
           chmod +x /usr/local/bin/cloudflared
 
-      - name: Generate and publish
+      - name: Generate and publish (${{ matrix.profile }})
         env:
-          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          STROM_PROFILE: ${{ matrix.profile }}
+          # NO1 uses INSTAGRAM_ACCESS_TOKEN; the other areas INSTAGRAM_ACCESS_TOKEN_NO2 … _NO5.
+          INSTAGRAM_ACCESS_TOKEN: ${{ matrix.profile == 'no1' && secrets.INSTAGRAM_ACCESS_TOKEN || secrets[format('INSTAGRAM_ACCESS_TOKEN_{0}', matrix.profile)] }}
           TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
         run: npm run autopilot
 
@@ -47,7 +57,7 @@ jobs:
           # Whole folder: the publish log MUST get pushed, or a post could go out twice.
           git add -A -- data
           if git diff --cached --quiet; then echo "No data changes."; exit 0; fi
-          git commit -m "data: daily run $(date -u +%Y-%m-%dT%H:%MZ)"
+          git commit -m "data: daily run ${{ matrix.profile }} $(date -u +%Y-%m-%dT%H:%MZ)"
           for attempt in 1 2 3; do
             git pull --rebase --autostash && git push && exit 0
             sleep 5
@@ -59,6 +69,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v5
         with:
-          name: posts
-          path: output/
+          name: posts-${{ matrix.profile }}
+          path: output/${{ matrix.profile }}/
           retention-days: 14

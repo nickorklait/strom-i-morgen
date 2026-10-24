@@ -1,4 +1,4 @@
-import type { Config } from './config.ts';
+import { priceBasis, type Config } from './config.ts';
 import { dateText } from './caption.ts';
 import { shiftDays, type AverageFn } from './data/history.ts';
 import { ore } from './data/prices.ts';
@@ -59,7 +59,7 @@ export function weeklyCaption(w: WeekSummary, config: Config): string {
     '',
     'Følg med i morgen kl. 14 for neste døgns priser ⚡',
     '',
-    `Spotpris inkl. mva, uten nettleie og påslag. ${config.source.attribution}.`,
+    `${priceBasis(config).replace(' og påslag', '')}. ${config.source.short}`,
     config.brand.hashtags.join(' '),
   ].join('\n');
 }

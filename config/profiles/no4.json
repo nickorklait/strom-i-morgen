@@ -1,0 +1,19 @@
+{
+  "brand": {
+    "tagline": "Spotpris Nord-Norge",
+    "hashtags": [
+      "#strømpris",
+      "#strøm",
+      "#nordnorge",
+      "#tromsø"
+    ]
+  },
+  "area": {
+    "code": "NO4",
+    "name": "Nord-Norge",
+    "vat": 0
+  },
+  "publish": {
+    "enabled": false
+  }
+}

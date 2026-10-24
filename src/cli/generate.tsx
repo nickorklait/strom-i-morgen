@@ -9,6 +9,7 @@ import { caption, factCheckNumbers } from '../caption.ts';
 import { loadConfig, paths } from '../config.ts';
 import { dayStats, fetchDay, toHourly } from '../data/prices.ts';
 import { DayAhead } from '../render/dayAhead.tsx';
+import { checkExchangeRate, merge as mergeValidation, validateDay } from '../data/validate.ts';
 import { CostCard } from '../render/costCard.tsx';
 import { Norway, type AreaAverage } from '../render/norway.tsx';
 import { costs } from '../costs.ts';
@@ -33,6 +34,15 @@ if (!raw) {
   console.log(`Prices for ${date} are not published yet (usually after 13:00 the day before).`);
   process.exit(0);
 }
+// Validate before anything else: an incomplete or inconsistent day is never published.
+const validation = mergeValidation(validateDay(raw, date), await checkExchangeRate(raw, date, config.source.userAgent));
+for (const w of validation.warnings) console.warn(`  ! ${w}`);
+if (validation.errors.length) {
+  console.error(`Price data for ${date} failed validation – no post:\n  - ${validation.errors.join('\n  - ')}`);
+  process.exit(1);
+}
+console.log(`Data checked: ${validation.passed.length} checks passed.`);
+
 const hours = toHourly(raw, config.area.vat);
 const stats = dayStats(hours, config.cheapWindowHours);
 const todayRaw = await fetchDay(addDays(date, -1), config);
@@ -53,7 +63,7 @@ async function areaAverages(day: string): Promise<AreaAverage[]> {
   for (const a of config.areas) {
     try {
       const r = await fetchDay(day, config, fetch, a.code);
-      if (r) out.push({ code: a.code, name: a.name, vat: a.vat, avg: dayStats(toHourly(r, a.vat), config.cheapWindowHours).avg });
+      if (r && validateDay(r, day).errors.length === 0) out.push({ code: a.code, name: a.name, vat: a.vat, avg: dayStats(toHourly(r, a.vat), config.cheapWindowHours).avg });
     } catch {
       // A missing area just leaves it out of the slide.
     }
@@ -62,7 +72,7 @@ async function areaAverages(day: string): Promise<AreaAverage[]> {
 }
 const badges = [
   ...(extras.record ? [{ text: recordText(extras.record, date)!, tone: extras.record.kind === 'cheapest' ? ('good' as const) : ('warn' as const) }] : []),
-  ...(extras.lastYear ? [{ text: lastYearText(extras.lastYear)!, tone: 'neutral' as const }] : []),
+  ...(extras.lastYear ? [{ text: lastYearText(extras.lastYear, stats.avg)!, tone: 'neutral' as const }] : []),
 ];
 
 const text = caption(date, stats, todayAvg, config, extras);
@@ -85,5 +95,5 @@ if (extras.areas?.length) {
   console.log(`  ✓ ${path.relative(process.cwd(), norwayFile)}`);
 }
 fs.writeFileSync(path.join(outDir, 'caption.txt'), text);
-fs.writeFileSync(path.join(outDir, 'post.json'), JSON.stringify({ date, area: config.area.code, hours, stats, todayAvg, extras, caption: text }, null, 2));
+fs.writeFileSync(path.join(outDir, 'post.json'), JSON.stringify({ date, area: config.area.code, hours, stats, todayAvg, extras, validation, caption: text }, null, 2));
 console.log(`\n${text}`);

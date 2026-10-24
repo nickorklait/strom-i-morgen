@@ -1,0 +1,19 @@
+{
+  "brand": {
+    "tagline": "Spotpris Vestlandet",
+    "hashtags": [
+      "#strømpris",
+      "#strøm",
+      "#bergen",
+      "#vestlandet"
+    ]
+  },
+  "area": {
+    "code": "NO5",
+    "name": "Vestlandet",
+    "vat": 0.25
+  },
+  "publish": {
+    "enabled": false
+  }
+}

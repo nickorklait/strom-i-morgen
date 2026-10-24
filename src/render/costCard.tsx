@@ -1,7 +1,7 @@
 // Slide 2: "Hva koster det i morgen?" Everyday uses in kroner, cheapest vs most expensive window.
 // A table, not a chart: the job is comparing two numbers per row, and the saving is spelled out.
 
-import type { Config } from '../config.ts';
+import { vatShort, type Config } from '../config.ts';
 import { dateText, dayName } from '../caption.ts';
 import { kr, type Cost } from '../costs.ts';
 import type { DayStats } from '../data/prices.ts';
@@ -57,7 +57,7 @@ export function CostCard({ date, s, items, config, format }: { date: string; s: 
         )}
 
         <span style={{ fontFamily: TEXT, fontSize: 18, color: c.muted, marginTop: 'auto', marginBottom: 14, lineHeight: 1.4 }}>
-          {`Kun strømprisen (spot inkl. mva) – nettleie og påslag kommer i tillegg. Forbruket er omtrentlig. ${config.source.attribution}.`}
+          {`Kun strømprisen (spot ${vatShort(config)}) – nettleie og påslag kommer i tillegg. Forbruket er omtrentlig. ${config.source.attribution}.`}
         </span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 24, backgroundColor: '#ffffff', padding: `20px ${pad}px`, marginBottom: story ? 190 : 0 }}>

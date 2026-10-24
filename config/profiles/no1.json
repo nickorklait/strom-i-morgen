@@ -1,0 +1,10 @@
+{
+  "brand": {
+    "tagline": "Spotpris Østlandet"
+  },
+  "area": {
+    "code": "NO1",
+    "name": "Østlandet",
+    "vat": 0.25
+  }
+}

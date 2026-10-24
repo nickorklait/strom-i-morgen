@@ -18,7 +18,8 @@
     "name": "Hva koster strømmen.no",
     "url": "https://www.hvakosterstrommen.no",
     "attribution": "Strømpriser levert av Hva koster strømmen.no",
-    "userAgent": "strompris-poc/0.1 (contact: nick.rios.haugen@orkla.no)"
+    "userAgent": "strompris-poc/0.1 (contact: nick.rios.haugen@orkla.no)",
+    "short": "Kilde: hvakosterstrommen.no"
   },
   "colors": {
     "surface": "#0c1b2e",

@@ -1,7 +1,7 @@
 // "Uka som gikk" (Sunday): the week's daily averages as 7 bars, cheapest day green, dearest amber,
 // with the week average and the change from the week before.
 
-import type { Config } from '../config.ts';
+import { vatShort, type Config } from '../config.ts';
 import { dateText } from '../caption.ts';
 import { ore } from '../data/prices.ts';
 import type { Format } from './render.ts';
@@ -45,7 +45,7 @@ export function Weekly({ w, config, format }: { w: WeekSummary; config: Config; 
       kicker={`Uke ${w.week} · ${dateText(first)} – ${dateText(last)} · ${config.area.name}`}
       title="Uka som"
       accentTitle="gikk"
-      footnote={`Snittpris per dag, øre/kWh inkl. mva, uten nettleie og påslag. ${config.source.attribution}.`}
+      footnote={`Snittpris per dag, øre/kWh ${vatShort(config)}, uten nettleie og påslag. ${config.source.attribution}.`}
     >
       <div style={{ display: 'flex', gap: 12, marginTop: story ? 50 : 34 }}>
         <Tile c={c} label="Snitt uka" value={`${ore(w.avg)} øre`} sub={weekChangeText(w) ?? undefined} />

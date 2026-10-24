@@ -1,0 +1,19 @@
+{
+  "brand": {
+    "tagline": "Spotpris Midt-Norge",
+    "hashtags": [
+      "#strømpris",
+      "#strøm",
+      "#trondheim",
+      "#midtnorge"
+    ]
+  },
+  "area": {
+    "code": "NO3",
+    "name": "Midt-Norge",
+    "vat": 0.25
+  },
+  "publish": {
+    "enabled": false
+  }
+}
