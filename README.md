@@ -55,21 +55,32 @@ The output goes to `output/<date>/`:
 - More price areas (one account per area, or a carousel).
 - A dashboard like the one in `haslum-poc`.
 
+## One account for all of Norway (national mode, the default)
+
+The account posts all five price areas every day (`STROM_PROFILE=norge`, `config/profiles/norge.json`, `"mode": "national"`):
+
+- **Feed carousel:** a cover with every area's average and cheapest window (cheapest area green, dearest amber), then one chart per area (Østlandet, Vestlandet, Sørlandet, Midt-Norge, Nord-Norge), then EV charging per area.
+- **Stories:** the cover, then one per area.
+- **Caption:** one line per area, the cheapest area, EV charging, and the short source line. Fact-checked against all areas' data.
+- **Sunday:** a weekly summary with each area's average and the change from the week before.
+- **Validation:** each area is checked on its own. An area that fails is left out of the post (and logged); the others still go out.
+- **Images:** `output/norge/<date>/`; the list of images to publish is in `post.json`.
+
 ## One account per price area (profiles)
 
-`STROM_PROFILE` selects the area: `no1` (Østlandet, the default), `no2` (Sørlandet), `no3` (Midt-Norge), `no4` (Nord-Norge, no VAT) or `no5` (Vestlandet).
+The per-area profiles still exist if separate accounts are wanted later. `STROM_PROFILE` selects the area: `no1` (Østlandet), `no2` (Sørlandet), `no3` (Midt-Norge), `no4` (Nord-Norge, no VAT) or `no5` (Vestlandet).
 
-- **Configuration:** shared settings are in `config/config.json`, and each area's own settings (area, name, hashtags, `publish.enabled`) in `config/profiles/<profile>.json`.
+- **Configuration:** shared settings are in `config/config.json`, and each profile's own settings (area, name, hashtags, `publish.enabled`) in `config/profiles/<profile>.json`.
 - **Folders:** images go to `output/<profile>/`, and the publish log and encrypted token to `data/<profile>/`. The price cache in `data/prices/` is shared.
 - **Running locally:** `$env:STROM_PROFILE="no5"; npm run generate`.
-- **In the cloud:** the workflow runs one job per area. Areas that are switched off only build images.
+- **In the cloud:** the workflow runs one job per profile in its matrix (now only `norge`).
 
 **A new account (e.g. Vestlandet):**
 
 1. Create the Instagram account (Creator), and set its profile picture and bio with `STROM_PROFILE=no5 npm run brand`.
 2. In the same Meta app: add it as an Instagram Tester, accept the invite, and generate a token.
-3. Add the GitHub secret `INSTAGRAM_ACCESS_TOKEN_NO5` (NO1 uses `INSTAGRAM_ACCESS_TOKEN`).
-4. Set `"publish": { "enabled": true }` in `config/profiles/no5.json` and push.
+3. Add the GitHub secret `INSTAGRAM_ACCESS_TOKEN_NO5` (`norge` uses `INSTAGRAM_ACCESS_TOKEN`).
+4. Set `"publish": { "enabled": true }` in `config/profiles/no5.json`, add `no5` to the workflow matrix, and push.
 
 ## Data validation
 

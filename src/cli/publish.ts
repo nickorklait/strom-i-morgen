@@ -46,16 +46,16 @@ const now = osloNow();
 const date = args.date ?? addDays(now.slice(0, 10), 1);
 const readPost = (dir: string) => {
   const f = path.join(paths.output, dir, 'post.json');
-  return fs.existsSync(f) ? (JSON.parse(fs.readFileSync(f, 'utf8')) as { caption: string }) : null;
+  return fs.existsSync(f) ? (JSON.parse(fs.readFileSync(f, 'utf8')) as { caption: string; images?: { feed: string[]; story: string[] } }) : null;
 };
 const candidates: Unit[] = [];
 const daily = readPost(date);
-if (daily) candidates.push(...unitsFor(date, daily.caption, config));
+if (daily) candidates.push(...unitsFor(date, daily.caption, config, daily.images));
 else console.log(`No post for ${date} yet (run npm run generate; prices come ~13:00 the day before).`);
 const today = now.slice(0, 10);
 if (isSunday(today)) {
   const weekly = readPost(weekKey(today));
-  if (weekly) candidates.push(...weeklyUnits(weekKey(today), today, weekly.caption, config));
+  if (weekly) candidates.push(...weeklyUnits(weekKey(today), today, weekly.caption, config, weekly.images));
 }
 const published = readPublished();
 const due = candidates.filter((u) => isDue(u, published, now, args.now));
@@ -90,7 +90,7 @@ try {
   for (const u of due) {
     const urls = u.images.map((img) => host.url(img.replace(/\.png$/, '.jpg')));
     try {
-      const ids = u.kind === 'feed' ? [await ig.publishFeed(urls, u.caption ?? '', u.dir.startsWith('uke') ? 'Strømpriser uka som gikk, dag for dag' : `Strømpriser for ${u.date}, time for time`)] : await ig.publishStories(urls);
+      const ids = u.kind === 'feed' ? [await ig.publishFeed(urls, u.caption ?? '', u.dir.startsWith('uke') ? 'Strømpriser uka som gikk' : `Strømpriser for ${u.date}, time for time, per landsdel`)] : await ig.publishStories(urls);
       const permalink = u.kind === 'feed' ? await ig.permalink(ids[0]).catch(() => null) : null;
       recordPublished(u.key, { publishedAt: new Date().toISOString(), kind: u.kind, mediaIds: ids, permalink });
       console.log(`  ✓ ${u.key}${permalink ? `  ${permalink}` : ''}`);

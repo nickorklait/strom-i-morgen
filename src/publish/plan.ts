@@ -22,20 +22,20 @@ export const addDays = (day: string, n: number) => {
 };
 
 /** The post for a date: from the configured time the day before until midday on the day itself. */
-export function unitsFor(date: string, caption: string, config: Config): Unit[] {
+export function unitsFor(date: string, caption: string, config: Config, images?: { feed: string[]; story: string[] }): Unit[] {
   const publishAt = `${addDays(date, -1)}T${config.publish.time}`;
   const expiresAt = `${date}T${config.publish.lastUsefulTime}`;
-  const units: Unit[] = [{ key: `${date}-feed`, date, dir: date, kind: 'feed', images: [`strom_${date}_feed.png`, `strom_${date}_kostnad.png`, `strom_${date}_norge.png`], caption, publishAt, expiresAt }];
-  if (config.publish.stories) units.push({ key: `${date}-story`, date, dir: date, kind: 'story', images: [`strom_${date}_story.png`], caption: null, publishAt, expiresAt });
+  const units: Unit[] = [{ key: `${date}-feed`, date, dir: date, kind: 'feed', images: images?.feed ?? [`strom_${date}_feed.png`, `strom_${date}_kostnad.png`, `strom_${date}_norge.png`], caption, publishAt, expiresAt }];
+  if (config.publish.stories) units.push({ key: `${date}-story`, date, dir: date, kind: 'story', images: images?.story ?? [`strom_${date}_story.png`], caption: null, publishAt, expiresAt });
   return units;
 }
 
 /** The Sunday summary: published on the Sunday itself, between weekly.time and weekly.lastUsefulTime. */
-export function weeklyUnits(key: string, sunday: string, caption: string, config: Config): Unit[] {
+export function weeklyUnits(key: string, sunday: string, caption: string, config: Config, images?: { feed: string[]; story: string[] }): Unit[] {
   const publishAt = `${sunday}T${config.weekly.time}`;
   const expiresAt = `${sunday}T${config.weekly.lastUsefulTime}`;
-  const units: Unit[] = [{ key: `${key}-feed`, date: sunday, dir: key, kind: 'feed', images: [`${key}_feed.png`], caption, publishAt, expiresAt }];
-  if (config.publish.stories) units.push({ key: `${key}-story`, date: sunday, dir: key, kind: 'story', images: [`${key}_story.png`], caption: null, publishAt, expiresAt });
+  const units: Unit[] = [{ key: `${key}-feed`, date: sunday, dir: key, kind: 'feed', images: images?.feed ?? [`${key}_feed.png`], caption, publishAt, expiresAt }];
+  if (config.publish.stories) units.push({ key: `${key}-story`, date: sunday, dir: key, kind: 'story', images: images?.story ?? [`${key}_story.png`], caption: null, publishAt, expiresAt });
   return units;
 }
 

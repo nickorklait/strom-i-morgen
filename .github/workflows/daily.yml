@@ -1,6 +1,6 @@
 # Daily: fetch tomorrow's prices (out ~13:00), validate them, build the post and publish it to Instagram.
-# One job per price area (profile). Only profiles with "publish.enabled" in config/profiles/<p>.json
-# and a token secret publish; the others just build their images. Then the publish logs, the price
+# One job per profile. "norge" is the national account (all price areas in one post); the per-area
+# profiles (no1 … no5) are still available if an account per area is wanted later. Then the publish logs, the price
 # cache and the encrypted tokens are committed back to the repo.
 name: Strøm i morgen
 
@@ -23,11 +23,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
-      # One area at a time: the jobs commit to the same repo.
+      # One profile at a time: the jobs commit to the same repo.
       max-parallel: 1
       fail-fast: false
       matrix:
-        profile: [no1, no2, no3, no4, no5]
+        profile: [norge]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -44,8 +44,8 @@ jobs:
       - name: Generate and publish (${{ matrix.profile }})
         env:
           STROM_PROFILE: ${{ matrix.profile }}
-          # NO1 uses INSTAGRAM_ACCESS_TOKEN; the other areas INSTAGRAM_ACCESS_TOKEN_NO2 … _NO5.
-          INSTAGRAM_ACCESS_TOKEN: ${{ matrix.profile == 'no1' && secrets.INSTAGRAM_ACCESS_TOKEN || secrets[format('INSTAGRAM_ACCESS_TOKEN_{0}', matrix.profile)] }}
+          # norge (the existing account) uses INSTAGRAM_ACCESS_TOKEN; per-area accounts INSTAGRAM_ACCESS_TOKEN_NO1 … _NO5.
+          INSTAGRAM_ACCESS_TOKEN: ${{ matrix.profile == 'norge' && secrets.INSTAGRAM_ACCESS_TOKEN || secrets[format('INSTAGRAM_ACCESS_TOKEN_{0}', matrix.profile)] }}
           TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
         run: npm run autopilot
 

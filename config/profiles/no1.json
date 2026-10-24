@@ -6,5 +6,8 @@
     "code": "NO1",
     "name": "Østlandet",
     "vat": 0.25
+  },
+  "publish": {
+    "enabled": false
   }
 }

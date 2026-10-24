@@ -8,6 +8,10 @@ import { renderPng, SIZES } from '../render/render.ts';
 
 const config = loadConfig();
 const c = config.colors;
+// National account: all price areas; otherwise one area.
+const national = config.mode === 'national';
+const where = national ? 'hele Norge' : config.area.name;
+const basis = national ? 'Spotpris inkl. mva (Nord-Norge uten mva), uten nettleie og påslag' : priceBasis(config);
 const out = path.join(paths.output, 'brand');
 fs.mkdirSync(out, { recursive: true });
 
@@ -42,13 +46,13 @@ const intro = (
       <div style={{ width: 150, height: 150, borderRadius: 150, backgroundColor: c.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{bolt(92, c.surface)}</div>
       <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 150, lineHeight: 0.88, marginTop: 44, textTransform: 'uppercase' }}>Strøm i</span>
       <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 150, lineHeight: 0.88, textTransform: 'uppercase', color: c.accent }}>morgen</span>
-      <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 34, marginTop: 30 }}>{`Morgendagens strømpris for ${config.area.name}, hver dag.`}</span>
+      <span style={{ fontFamily: 'Inter', fontWeight: 600, fontSize: 34, marginTop: 30 }}>{`Morgendagens strømpris for ${where}, hver dag.`}</span>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 30, marginTop: 56 }}>
         {point('Ca. kl. 14 hver dag', 'Når prisene for neste døgn er klare')}
-        {point('Billigste timer', 'Når du bør vaske, tørke og lade')}
-        {point('Time for time', priceBasis(config))}
+        {national ? point('Alle landsdeler', 'Østlandet, Vestlandet, Sørlandet, Midt- og Nord-Norge') : point('Billigste timer', 'Når du bør vaske, tørke og lade')}
+        {point('Time for time', basis)}
       </div>
-      <span style={{ fontSize: 20, color: c.muted, marginTop: 'auto', marginBottom: 18 }}>{`${config.source.attribution} · Prisområde ${config.area.code}`}</span>
+      <span style={{ fontSize: 20, color: c.muted, marginTop: 'auto', marginBottom: 18 }}>{national ? config.source.attribution : `${config.source.attribution} · Prisområde ${config.area.code}`}</span>
     </div>
     <div style={{ display: 'flex', alignItems: 'center', gap: 24, backgroundColor: '#ffffff', padding: '20px 64px' }}>
       <span style={{ fontWeight: 600, fontSize: 15, letterSpacing: 2, color: '#6b7280', textTransform: 'uppercase' }}>{config.sponsor.label}</span>
@@ -63,22 +67,22 @@ fs.writeFileSync(path.join(out, 'intro_feed.png'), await renderPng(intro, SIZES.
 fs.writeFileSync(
   path.join(out, 'tekster.txt'),
   `PROFILNAVN
-Strøm i morgen – ${config.area.name}
+Strøm i morgen – ${national ? 'Norge' : config.area.name}
 
 BIO (maks 150 tegn)
-⚡ Morgendagens strømpris for ${config.area.name} (${config.area.code}), hver dag ca. kl. 14
+⚡ Morgendagens strømpris for ${national ? 'hele Norge, alle landsdeler' : `${config.area.name} (${config.area.code})`}, hver dag ca. kl. 14
 💚 Billigste timer til vask og lading
 Data: hvakosterstrommen.no
 
 TEKST TIL INTRO-INNLEGGET (fest det øverst)
 Velkommen til Strøm i morgen ⚡
 
-Hver dag rundt kl. 14 – når prisene for neste døgn er klare – legger vi ut morgendagens strømpris for ${config.area.name}, time for time.
+Hver dag rundt kl. 14 – når prisene for neste døgn er klare – legger vi ut morgendagens strømpris for ${national ? 'hele Norge. Sveip for din landsdel, time for time' : `${config.area.name}, time for time`}.
 
 💚 Se når strømmen er billigst, og flytt vask, tørk og lading dit.
 🔶 Se når den er dyrest, og unngå de timene.
 
-Prisene er ${priceBasis(config).toLowerCase()} fra strømselskapet. ${config.source.attribution}.
+Prisene er ${basis.toLowerCase()} fra strømselskapet. ${config.source.attribution}.
 
 Følg kontoen og slå på varsler for å få prisen hver dag.
 ${config.brand.hashtags.join(' ')}

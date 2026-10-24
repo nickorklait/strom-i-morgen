@@ -5,11 +5,11 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
- * Which account (price area) to run for: STROM_PROFILE=no1 … no5 (default no1).
+ * Which account to run for: STROM_PROFILE=norge (all areas in one account, the default) or no1 … no5 (one area).
  * config/config.json holds the shared settings; config/profiles/<profile>.json the area-specific ones.
  * Each profile has its own images, publish log and Instagram token; the price cache is shared.
  */
-export const PROFILE = (process.env.STROM_PROFILE ?? 'no1').toLowerCase();
+export const PROFILE = (process.env.STROM_PROFILE ?? 'norge').toLowerCase();
 if (!/^[a-z0-9-]+$/.test(PROFILE)) throw new Error(`Invalid STROM_PROFILE "${PROFILE}"`);
 
 export const paths = {
@@ -21,6 +21,10 @@ export const paths = {
 };
 
 export interface Config {
+  /** "national": one account for all areas (carousel per area). "area" (default): one account per area. */
+  mode?: 'area' | 'national';
+  /** National mode: the order of the areas in the post. */
+  national?: { order: string[] };
   brand: { name: string; tagline: string; hashtags: string[] };
   /** Price area (NO1–NO5), its display name and VAT rate (NO4 has none). */
   area: { code: string; name: string; vat: number };
